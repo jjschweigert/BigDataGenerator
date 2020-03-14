@@ -6,17 +6,118 @@
         xmlns:local="clr-namespace:BigDataGenerator"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <StackPanel HorizontalAlignment="Center"
+    <Grid HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <ListView Grid.Row="0" Grid.Column="0"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  ItemsSource="{Binding SchemaItemSource}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0"
+                                    Orientation="Vertical">
+                            <Label Content="Data Type" />
+                            <ComboBox>
+
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1"
+                                    Orientation="Vertical">
+                            <Label Content="Value" />
+                            <TextBox></TextBox>
+                        </StackPanel>
+                        <Button Grid.Row="0" Grid.Column="2"
+                                Command="{Binding DeleteSchemaObjectClicked}"
+                                CommandParameter="{Binding .}"
+                                Width="25"
+                                Height="25"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0">
+                            <Button.Content>
+                                <Image Source="{Binding FilePathImageSource}" Stretch="Fill" />
+                            </Button.Content>
+                        </Button>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <StackPanel Grid.Row="0" Grid.Column="1" 
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Orientation="Vertical">
-            <TextBox Text="{Binding NumberOfRecords}" 
-                     Margin="0, 0, 0, 15"/>
-            <TextBox Text="{Binding FilePath}" 
-                     Margin="0, 0, 0, 15"/>
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="0, 0, 0, 15">
+                <Label Content="Output File" 
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       FontSize="30"/>
+                <TextBox Text="{Binding FilePath}" 
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Left"
+                         BorderBrush="#007FFF"
+                         BorderThickness="2"
+                         Padding="5"
+                         Margin="0, 0, 10, 0"
+                         FontSize="20"/>
+                <Button Command="{Binding FilePathClickedEvent}"
+                        CommandParameter="{Binding .}"
+                        Width="50"
+                        Height="50"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="0">
+                    <Button.Content>
+                        <Image Source="{Binding FilePathImageSource}" Stretch="Fill" />
+                    </Button.Content>
+                </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="0, 0, 0, 15">
+                <Label Content="Number of Records"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center" 
+                       FontSize="30"/>
+                <TextBox Text="{Binding NumberOfRecords}" 
+                         HorizontalAlignment="Left"
+                         VerticalAlignment="Center"
+                         BorderBrush="#007FFF"
+                         BorderThickness="2"
+                         Padding="5"
+                         FontSize="20"/>
+            </StackPanel>
+            
             <Button Content="Generate Records" 
                     Margin="0, 0, 0, 15"
-                    Click="Button_Click"/>
+                    Click="Button_Click"
+                    FontSize="30"/>
+            <Grid>
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding CurrentProgressValue}" x:Name="GenerationStatusProgressBar"/>
+                <TextBlock Text="{Binding ElementName=GenerationStatusProgressBar, Path=Value, StringFormat={}{0:0}%}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Grid>
             <TextBlock Text="{Binding Results}" />
         </StackPanel>
     </Grid>
