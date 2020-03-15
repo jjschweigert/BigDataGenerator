@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -144,44 +145,118 @@ namespace BigDataGenerator
             DataContext = this;
 
             NumberOfRecords = "1000000";
+            BatchSize = "500";
             FilePath = @"C:\sample.csv";
             FilePathImageSource = @"\Resources\filepath_icon.png";
+            IsGenerationInitializing = false;
+            GenerationProgressVisibility = Visibility.Hidden;
         }
 
+        private string _BatchSize { get; set; }
+        public string BatchSize
+        {
+            get
+            {
+                return _BatchSize;
+            }
+            set
+            {
+                _BatchSize = value;
+                OnPropertyChanged(nameof(BatchSize));
+            }
+        }
+
+        private int RecordsPerTask
+        { 
+            get
+            {
+                return int.Parse(BatchSize);
+            }
+        }
+
+        private bool _IsGenerationInitializing { get; set; }
+        public bool IsGenerationInitializing
+        {
+            get
+            {
+                return _IsGenerationInitializing;
+            }
+            set
+            {
+                _IsGenerationInitializing = value;
+
+                if(value)
+                {
+                    InitializationProgressVisibility = Visibility.Visible;
+                    GenerationProgressVisibility = Visibility.Visible;
+                }
+                else
+                {
+                    InitializationProgressVisibility = Visibility.Hidden;
+                }
+
+                OnPropertyChanged(nameof(IsGenerationInitializing));
+            }
+        }
+
+        private Visibility _InitializationProgressVisibility { get; set; }
+        public Visibility InitializationProgressVisibility
+        {
+            get
+            {
+                return _InitializationProgressVisibility;
+            }
+            set
+            {
+                _InitializationProgressVisibility = value;
+                OnPropertyChanged(nameof(InitializationProgressVisibility));
+            }
+        }
+
+        private Visibility _GenerationProgressVisibility { get; set; }
+        public Visibility GenerationProgressVisibility
+        {
+            get
+            {
+                return _GenerationProgressVisibility;
+            }
+            set
+            {
+                _GenerationProgressVisibility = value;
+                OnPropertyChanged(nameof(GenerationProgressVisibility));
+            }
+        }
 
         private async void GeneratorLoop(int count, string identifier)
         {
             string Output = "";
-            for(int i = 0; i < count; i ++)
+
+            for (int i = 0; i < count; i++)
             {
-                string Line = identifier.ToString() + i.ToString() + ",100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100";
-                Output += Line + "\n";
+                await Task.Run(() =>
+                {
+                    string Line = identifier.ToString() + i.ToString() + ",10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000";
+                    Output += Line + "\n";
+                });
             }
 
             try 
             {
-                //while(IsFileInUse)
-                //{
-                //    await Task.Delay(500);
-                //}
-
                 int retry = 0;
 
                 while(retry < 5)
                 {
                     try
                     {
-                        await OutputFileStream.WriteLineAsync(Output);
+                        await OutputFileStream.WriteLineAsync(Output).ConfigureAwait(false);
+                        //await OutputFileStream.FlushAsync().ConfigureAwait(false);
+
                         break;
                     }
-                    catch { await Task.Delay(300); }
+                    catch { await Task.Delay(500); }
                 }
 
-                if (retry < 5)
-                {
-                    StatusUpdate("Data Generated", "Added " + count + " records to " + FilePath);
-                }
-                else
+                if (retry >= 5)
                 {
                     StatusUpdate("Failed", "Unable to add generated data set to the file " + FilePath);
                 }
@@ -202,45 +277,87 @@ namespace BigDataGenerator
 
         private void StatusUpdate(string Title, string Message)
         {
-            //Results += (Title + " - " + Message) + "\n";
+            Results += (Title + " - " + Message) + "\n";
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
+            IsGenerationInitializing = true;
             Results = "";
-            int SplitValue = 500;
             CompletedTaskCount = 0;
+            Stopwatch ProgressTimer = new Stopwatch();
+
+            try { await File.WriteAllTextAsync(FilePath, string.Empty); }
+            catch (Exception ex)
+            {
+                StatusUpdate("Error", ex.Message);
+                IsGenerationInitializing = false;
+                GenerationProgressVisibility = Visibility.Hidden;
+                return;
+            }
+
+            ProgressTimer.Start();
 
             try
             {
-                OutputFileStream = new StreamWriter(FilePath);
+                OutputFileStream = new StreamWriter
+                (
+                    path: FilePath,
+                    append: true,
+                    Encoding.UTF8,
+                    bufferSize: 65536
+                );
             }
             catch(Exception ex)
             {
                 StatusUpdate("Error", ex.Message);
+                IsGenerationInitializing = false;
+                GenerationProgressVisibility = Visibility.Hidden;
                 return;
             }
 
             OutputFileStream.AutoFlush = true;
+            TotalTasksCount = RecordCount / RecordsPerTask;
+            CurrentProgressValue = 0;
 
-            TotalTasksCount = RecordCount / SplitValue;
-
-            for (int i = 0; i < TotalTasksCount; i ++)
+            if (TotalTasksCount == 0)
             {
-                await Task.Factory.StartNew(() => { GeneratorLoop(SplitValue, "sample"); }, TaskCreationOptions.LongRunning);
+                await Task.Factory.StartNew(() => { GeneratorLoop(RecordCount, "sample"); });
             }
+            else
+            {
+                await Task.Run(() =>
+                {
+                    Parallel.For(0, TotalTasksCount, async i =>
+                    {
+                        await Task.Factory.StartNew(() => { GeneratorLoop(RecordsPerTask, "sample"); });
+                    });
+                });
+            }
+
+            IsGenerationInitializing = false;
 
             await Task.Run(async () =>
             {
                 while (CompletedTaskCount < TotalTasksCount)
                 {
-                    //await Dispatcher.BeginInvoke((Action)(() => { CurrentProgressValue = (CompletedTaskCount / TotalTasksCount) * 10; }));
-                    
-                    await Task.Delay(500);
+                    await Task.Delay(300);
                 }
             });
 
-            OutputFileStream.Close();
+            try
+            {
+                OutputFileStream.Close();
+            }
+            catch(Exception ex)
+            {
+                StatusUpdate("Error", ex.Message);
+            }
+
+            ProgressTimer.Stop();
+            TimeSpan ProgressTimeElapsed = ProgressTimer.Elapsed;
+
+            StatusUpdate("Completed", "Generated dataset in " + ProgressTimeElapsed.TotalSeconds.ToString() + " seconds.");
         }
     }
 }

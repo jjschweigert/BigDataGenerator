@@ -107,16 +107,39 @@
                          Padding="5"
                          FontSize="20"/>
             </StackPanel>
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Margin="0, 0, 0, 15">
+                <Label Content="Batch Size"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center" 
+                       FontSize="30"/>
+                <TextBox Text="{Binding BatchSize}" 
+                         HorizontalAlignment="Left"
+                         VerticalAlignment="Center"
+                         BorderBrush="#007FFF"
+                         BorderThickness="2"
+                         Padding="5"
+                         FontSize="20"/>
+            </StackPanel>
             
             <Button Content="Generate Records" 
                     Margin="0, 0, 0, 15"
                     Click="Button_Click"
                     FontSize="30"/>
             <Grid>
-                <ProgressBar Minimum="0" Maximum="100" Value="{Binding CurrentProgressValue}" x:Name="GenerationStatusProgressBar"/>
+                <ProgressBar Minimum="0" Maximum="100" 
+                             Value="{Binding CurrentProgressValue}" 
+                             x:Name="GenerationStatusProgressBar"
+                             Visibility="{Binding GenerationProgressVisibility}"/>
                 <TextBlock Text="{Binding ElementName=GenerationStatusProgressBar, Path=Value, StringFormat={}{0:0}%}"
                            HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
+                           VerticalAlignment="Center" 
+                           Visibility="{Binding GenerationProgressVisibility}"/>
+                <ProgressBar IsIndeterminate="True"
+                             IsEnabled="{Binding IsGenerationInitializing}"
+                             Visibility="{Binding InitializationProgressVisibility}" />
             </Grid>
             <TextBlock Text="{Binding Results}" />
         </StackPanel>
